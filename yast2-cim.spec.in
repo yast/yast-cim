@@ -1,6 +1,6 @@
 @HEADER-COMMENT@
 
-# neededforbuild
+# neededforbuild yast2-core openwbem openwbem-devel
 
 @HEADER@
 Summary:	-
