@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Nov  2 11:10:32 CET 2004 - visnov@suse.cz
+
+- fixed parallel build
+- 2.11.2 
+
+-------------------------------------------------------------------
 Sat Oct 30 16:28:37 CEST 2004 - nashif@suse.de
 
 - Added pkgconfig to neededforbuild
