@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Sat Oct 30 16:28:37 CEST 2004 - nashif@suse.de
+
+- Added pkgconfig to neededforbuild
+
+-------------------------------------------------------------------
 Wed Oct 27 21:42:20 CEST 2004 - nashif@suse.de
 
 - Fixed Makefile for lib64
