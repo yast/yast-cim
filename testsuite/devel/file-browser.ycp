@@ -9,6 +9,14 @@
     import "HTML";
 
     string cop = "";
+    string client = "";
+
+
+    if (size (WFM::Args ()) > 0 && (is (WFM::Args(0), string)))
+    {
+        client = (string)WFM::Args(0);
+    }
+
 
     /**
      * Get directory name
@@ -70,7 +78,11 @@
 
     
     string wbem = "service:wbem:http";
-    list<map> response = SLP::FindSrvs(wbem, "");
+    list<map> response = [];
+    if (client=="")
+    {
+        response = SLP::FindSrvs(wbem, "");
+    }
     list treeItems = [];
 
     term contents =
@@ -86,7 +98,16 @@
     string title = _("Remote File Browser");
     Wizard::CreateTreeDialog();
     Wizard::SetDesktopIcon("slp");
-    list<map> Tree = fillTree(response);
+
+    list<map> Tree = [];
+    if (client == "")
+    {
+        Tree = fillTree(response);
+    }
+    else 
+    {
+        Tree =Wizard::AddTreeItem(Tree, "", client, client);
+    }
     y2debug("Tree=%1", Tree);
     Wizard::CreateTree(Tree, _("Hosts") );
 
