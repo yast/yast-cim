@@ -1,0 +1,105 @@
+
+{
+    textdomain "cim-browser";
+
+    import "CIM";
+    import "SLP";
+
+    import "Wizard";
+    import "Label";
+    import "HTML";
+
+
+
+    include "partitioning/partition_defines.ycp";
+
+    define list<map> fillTree(list<map> res)
+    {
+        list<map> Tree = [];
+        foreach(map srvs,  res, ``{
+                Tree =Wizard::AddTreeItem(Tree, "", srvs["pcHost"]:"",
+                    srvs["pcHost"]:"");
+                });
+
+        return Tree;
+    }
+
+    string getOS() 
+    {
+        list i = CIM::EnumerateInstances("Novell_OperatingSystem");
+        string elementName = i[0,"ElementName", "value"]:"";
+        string descr = i[0,"Description", "value"]:"";
+        
+        string out = "<h1>" + i[0,"Caption", "value"]:"" + "</h1>";
+        out = out + "<table>";
+        out = out + "<tr><td><b>Description</b></td><td>" + descr + "</td></tr>";
+        out = out + "<tr><td><b>OS Name</b></td><td>" + elementName + "</td></tr>";
+        out = out + "<tr><td><b>Version</b></td><td>" + i[0,"Version", "value"]:"" + "</td></tr>";
+        out = out + "<tr><td><b>Number Of Processes</b></td><td>" +
+            i[0,"NumberOfProcesses", "value"]:0 + "</td></tr>";
+        out = out + "<tr><td><b>Number Of Users</b></td><td>" +
+            i[0,"NumberOfUsers", "value"]:0 + "</td></tr>";
+        out = out + "<tr><td><b>Total Visible Memory Size</b></td><td>" +
+           ByteToHumanString( i[0,"TotalVisibleMemorySize", "value"]:0) + "</td></tr>";
+        out = out + "<tr><td><b>Total Swap Space Size</b></td><td>" +
+           ByteToHumanString( i[0,"TotalSwapSpaceSize", "value"]:0) + "</td></tr>";
+        out = out + "</table>";
+        return out;
+    }
+
+
+
+
+    
+    string wbem = "service:wbem:http";
+    list<map> response = SLP::FindSrvs(wbem, "");
+    list treeItems = [];
+
+    term contents =
+        `Top(
+                `VBox(
+                    `RichText(`id(`host),  "" )
+                    )
+            );
+
+
+    string title = _("Host Browser");
+    Wizard::CreateTreeDialog();
+    Wizard::SetDesktopIcon("slp");
+    list<map> Tree = fillTree(response);
+    y2debug("Tree=%1", Tree);
+    Wizard::CreateTree(Tree, _("Hosts") );
+
+    string help = dgettext("base", "No help available");
+    Wizard::SetContentsButtons(title, contents, help, Label::BackButton(),
+            Label::FinishButton());
+
+    Wizard::HideAbortButton();
+    Wizard::DisableBackButton();
+
+
+
+    any input = nil;
+    repeat {
+
+        string host = "";
+        map event = UI::WaitForEvent();
+        input = event["ID"]:nil;
+        if (input == `wizardTree)
+            input = UI::QueryWidget(`id(`wizardTree), `CurrentItem);
+
+        y2debug("input: %1", input);
+        if (is(input, string))
+        {
+            host = Wizard::QueryTreeItem();
+            CIM::Connect(host, "root/cimv2");
+            string ostext = getOS();
+            UI::ChangeWidget(`id(`host), `Value, ostext);
+        }
+    } until (input == `next || input == `abort || input == `cancel);
+
+    UI::CloseDialog();
+    return input;
+    // EOF
+
+}

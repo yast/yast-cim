@@ -72,7 +72,7 @@ class CIMFunctions : public Y2Namespace
 	YCPValue LastError ();
         
 	// general
-	/* TYPEINFO: void(string, string) */
+	/* TYPEINFO: boolean(string,string) */
         YCPValue Connect (const YCPString& url, const YCPString& ns);
 
 
@@ -119,6 +119,8 @@ class CIMFunctions : public Y2Namespace
         YCPValue ValueToAny(const OpenWBEM::CIMValue &value);
         YCPValue GetInstanceI ( const OpenWBEM::CIMObjectPath path );
         YCPValue DeleteInstance (const OpenWBEM::CIMObjectPath path );
+
+        bool cimomAvailable(OpenWBEM::CIMClient *client);
 
 	vector<string> _registered_functions;
 	OpenWBEM::CIMClient* m_client;
