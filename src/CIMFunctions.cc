@@ -120,7 +120,7 @@ bool Y2CIMFunction::appendParameter (const YCPValue& arg)
         m_param5 = arg;
         return true;
     }
-    y2internal ("appendParameter > 3 not implemented");
+    y2internal ("appendParameter > 5 not implemented");
     return false;
 }
 
@@ -588,35 +588,42 @@ YCPValue CIMFunctions::EnumerateInstances (const YCPString& classname)
         return YCPVoid();
 
     OpenWBEM::String cn = classname->value ().c_str();
-    OpenWBEM::CIMInstanceEnumeration result = client()->enumInstancesE
-        ( cn,
-          WBEMFlags::E_DEEP,
-          WBEMFlags::E_NOT_LOCAL_ONLY,
-          WBEMFlags::E_INCLUDE_QUALIFIERS,
-          WBEMFlags::E_EXCLUDE_CLASS_ORIGIN,
-          0);
-          
+    try {
+        OpenWBEM::CIMInstanceEnumeration result = client()->enumInstancesE
+            ( cn,
+              WBEMFlags::E_DEEP,
+              WBEMFlags::E_NOT_LOCAL_ONLY,
+              WBEMFlags::E_INCLUDE_QUALIFIERS,
+              WBEMFlags::E_EXCLUDE_CLASS_ORIGIN,
+              0);
 
 
-    YCPList result_list;
-    OpenWBEM::CIMObjectPath cop;
 
-    while (result.hasMoreElements())
-    {
-        OpenWBEM::CIMInstance i = result.nextElement();
-        cop = OpenWBEM::CIMObjectPath("root/cimv2", i);
+        YCPList result_list;
+        OpenWBEM::CIMObjectPath cop;
 
-        if (! cop)
+        while (result.hasMoreElements())
         {
-            y2error ("Nonexistent cop\n");
-            continue;
+            OpenWBEM::CIMInstance i = result.nextElement();
+            cop = OpenWBEM::CIMObjectPath("root/cimv2", i);
+
+            if (! cop)
+            {
+                y2error ("Nonexistent cop\n");
+                continue;
+            }
+
+            y2debug("Getting Instance: %s", cop.toString().c_str());
+            result_list->add (GetInstance(cop));
         }
 
-        y2debug("Getting Instance: %s", cop.toString().c_str());
-        result_list->add (GetInstance(cop));
+        return result_list;
     }
-
-    return result_list;
+    catch (OpenWBEM::CIMException &e)
+    {
+        y2error("%s", e.getMessage());
+        return YCPVoid();
+    }
 }
 
 // EnumerateClasses
