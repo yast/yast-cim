@@ -5,6 +5,7 @@
 AM_CXXFLAGS = -DY2LOG=\"cim\" -DSUSEVERSION=\"${SUSEVERSION}\"	\
 	-DLOCALEDIR=\"${localedir}\"  -fno-inline
 
+
 plugin_LTLIBRARIES = libpy2CIM.la
 
 libpy2CIM_la_SOURCES =				\
@@ -14,8 +15,8 @@ libpy2CIM_la_SOURCES =				\
 
 libpy2CIM_la_LDFLAGS = -version-info 2:0
 libpy2CIM_la_LIBADD = \
-	/usr/lib/libycp.la		\
-	/usr/lib/liby2.la		\
+	-lycp		\
+	-ly2		\
 	-ly2util -lowclient
 
 INCLUDES =					\
