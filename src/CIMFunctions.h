@@ -32,6 +32,9 @@
  
 namespace OpenWBEM {
     class CIMClient;
+    class CIMException;
+    class CIMObjectPath;
+    class CIMValue;
 };
 
 
@@ -48,9 +51,26 @@ class CIMFunctions : public Y2Namespace
 
 
 	// general
-	/* TYPEINFO: list<string>(string) */
-	YCPValue EnumerateClassNames (const YCPString& classname);
+	/* TYPEINFO: list<string>(string,symbol) */
+	YCPValue EnumerateClassNames (const YCPString& classname, const YCPSymbol& DeepFlag);
         
+	// general
+	/* TYPEINFO: list<string>(string,symbol) */
+	YCPValue EnumerateClasses (const YCPString& classname, const YCPSymbol& DeepFlag);
+
+	// general
+	/* TYPEINFO: map<string,any>(string) */
+        YCPValue GetInstance (const YCPString& instanceName );
+
+	// general
+	/* TYPEINFO: string() */
+	YCPValue LastError ();
+        
+	// general
+	/* TYPEINFO: void(string, string) */
+        YCPValue Connect (const YCPString& url, const YCPString& ns);
+
+
 	/**
 	 * Constructor.
 	 */
@@ -83,10 +103,15 @@ class CIMFunctions : public Y2Namespace
 	}
 
 	virtual Y2Function* createFunctionCall (const string name, constFunctionTypePtr type);
-	
+
+    protected:
+        
+
     private:
 	void registerFunctions ();
 	OpenWBEM::CIMClient* client ();
+        YCPList arrayValueToList(const OpenWBEM::CIMValue& value);
+        YCPValue GetInstanceI (OpenWBEM::CIMObjectPath path );
 
 	vector<string> _registered_functions;
 	OpenWBEM::CIMClient* m_client;

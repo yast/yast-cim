@@ -23,9 +23,12 @@
 #include <ycp/YCPMap.h>
 #include <ycp/YCPBoolean.h>
 #include <ycp/YCPInteger.h>
+#include <ycp/YCPSymbol.h>
+#include <ycp/YCPFloat.h>
 
 #include "CIMFunctions.h"
 
+#include "openwbem/OW_config.h"
 #include "openwbem/OW_CIMClient.hpp"
 #include "openwbem/OW_Array.hpp"
 #include "openwbem/OW_CIMClass.hpp"
@@ -180,11 +183,19 @@ OpenWBEM::CIMClient* CIMFunctions::client ()
         {
             // create the client (connect)
             m_client = new OpenWBEM::CIMClient ("wbem://localhost/", "root/cimv2");
+            y2debug("connection...");
         }
         return m_client;
 }
 
+YCPValue CIMFunctions::Connect (const YCPString& url, const YCPString& ns)
+{
+    //y2debug("url: %s, namespace: %s", url.toString().c_str(), ns.toString().c_str());
+    return YCPVoid();
+}
 
+
+// EnumerateInstanceNames
 YCPValue CIMFunctions::EnumerateInstanceNames (const YCPString& classname)
 {
     try
@@ -211,13 +222,208 @@ YCPValue CIMFunctions::EnumerateInstanceNames (const YCPString& classname)
 
         return result_list;
     }
-    catch (OpenWBEM::CIMException &e) 
+    catch (OpenWBEM::CIMException& e) 
     {
         y2error("%s", e.getMessage());
         return YCPVoid();
     }
 }
 
+template <class type>
+static YCPList typeToArray(const OpenWBEM::CIMValue &value)
+{
+  YCPList result;
+  OpenWBEM::Array<type> array;
+  value.get(array);
+  typename OpenWBEM::Array<type>::iterator it;
+  for (it = array.begin(); it != array.end(); ++it)
+  {
+    //result->add(YCPString(it->toString().c_str() ));
+    result->add(YCPString(""));
+  }
+  return result;
+}
+
+
+template <class type, class numtype>
+static YCPList numToArray(const OpenWBEM::CIMValue &value)
+{
+  YCPList result;
+  OpenWBEM::Array<type> array;
+  value.get(array);
+  typename OpenWBEM::Array<type>::iterator it;
+  for (it = array.begin(); it != array.end(); ++it)
+  {
+    result->add(YCPInteger((numtype)*it));
+  }
+  return result;
+}
+
+template <class type, class numtype>
+static YCPList floatToArray(const OpenWBEM::CIMValue &value)
+{
+  YCPList result;
+  OpenWBEM::Array<type> array;
+  value.get(array);
+  typename OpenWBEM::Array<type>::iterator it;
+  for (it = array.begin(); it != array.end(); ++it)
+  {
+    result->add(YCPFloat((numtype)*it));
+  }
+  return result;
+}
+
+YCPList CIMFunctions::arrayValueToList(const OpenWBEM::CIMValue &value)
+{
+  if (!value && !value.isArray())
+    return YCPList();
+
+  // numeric types
+  if (value.getType() == OpenWBEM::CIMDataType::UINT8)
+    return numToArray<OpenWBEM::UInt8, OpenWBEM::UInt8>(value);
+  if (value.getType() == OpenWBEM::CIMDataType::SINT8)
+    return numToArray<OpenWBEM::Int8, OpenWBEM::Int8>(value);
+  if (value.getType() == OpenWBEM::CIMDataType::UINT16)
+    return numToArray<OpenWBEM::UInt16, OpenWBEM::UInt16>(value);
+  if (value.getType() == OpenWBEM::CIMDataType::SINT16)
+    return numToArray<OpenWBEM::Int16, OpenWBEM::Int16>(value);
+  if (value.getType() == OpenWBEM::CIMDataType::UINT32)
+    return numToArray<OpenWBEM::UInt32, OpenWBEM::UInt32>(value);
+  if (value.getType() == OpenWBEM::CIMDataType::SINT32)
+    return numToArray<OpenWBEM::Int32, OpenWBEM::Int32>(value);
+  if (value.getType() == OpenWBEM::CIMDataType::REAL32)
+    return floatToArray<OpenWBEM::Real32, OpenWBEM::Real32>(value);
+  if (value.getType() == OpenWBEM::CIMDataType::REAL64)
+    return floatToArray<OpenWBEM::Real64, OpenWBEM::Real64>(value);
+  if (value.getType() == OpenWBEM::CIMDataType::UINT64)
+    return numToArray<OpenWBEM::UInt64, OpenWBEM::UInt64>(value);
+  if (value.getType() == OpenWBEM::CIMDataType::SINT32)
+    return numToArray<OpenWBEM::Int64, OpenWBEM::Int64>(value);  
+
+  // strings
+  if (value.getType() == OpenWBEM::CIMDataType::STRING)
+    return typeToArray<OpenWBEM::String>(value);
+
+  // date and time value
+  if (value.getType() == OpenWBEM::CIMDataType::DATETIME)
+    return typeToArray<OpenWBEM::String>(value);
+
+  // reference
+  if (value.getType() == OpenWBEM::CIMDataType::REFERENCE)
+    return typeToArray<OpenWBEM::CIMObjectPath>(value);
+
+  // embedded class
+  if (value.getType() == OpenWBEM::CIMDataType::EMBEDDEDCLASS)
+    return typeToArray<OpenWBEM::CIMClass>(value);
+
+  // embedded instance
+  if (value.getType() == OpenWBEM::CIMDataType::EMBEDDEDINSTANCE)
+    return typeToArray<OpenWBEM::CIMInstance>(value);
+
+  // unknown array, should not happen
+  return YCPList();
+}
+
+
+
+// GetInstance
+//
+YCPValue CIMFunctions::GetInstance (const YCPString& instanceName )
+{
+    return YCPMap();
+}
+
+// GetInstance
+//
+//YCPValue CIMFunctions::GetInstance (const YCPString& instanceName )
+YCPValue CIMFunctions::GetInstanceI (OpenWBEM::CIMObjectPath path)
+{
+    //OpenWBEM::CIMObjectPath path;
+    //path.parse(instanceName->value ().c_str ());
+    y2milestone("GetInstance: %s", path.toString ().c_str ());
+
+    OpenWBEM::CIMInstance result = client()->getInstance ( path  ); 
+    
+    YCPMap instance;
+
+    OpenWBEM::CIMPropertyArray props = result.getProperties(OpenWBEM::CIMDataType::INVALID);
+
+    for (size_t i = 0; i < props.size(); ++i)
+    {
+        OpenWBEM::CIMProperty& p = props[i];
+        YCPValue v;
+
+        CIMValue cv = p.getValue();
+        YCPString name(p.getName().toString().c_str());
+        OpenWBEM::String pname = p.getName();
+        if (cv)
+        {
+            y2debug("property= %s, datatype %s", 
+                    name->value().c_str(),
+                    p.getDataType().toString().c_str());
+            if (p.getDataType().isArrayType())
+            {
+                y2debug("is array");
+                YCPList a = arrayValueToList(cv);
+                instance->add(name, a);
+            }
+            else if (p.getDataType().isReferenceType())
+            {
+                y2debug("is reference");
+            }
+            else 
+            {
+                OpenWBEM::UInt64 aa;
+                OpenWBEM::UInt32 ab;
+                OpenWBEM::UInt16 ac;
+
+                switch (p.getDataType().getType())
+                {
+                case OpenWBEM::CIMDataType::CIMNULL:
+                    instance->add(name, YCPVoid());
+                    break;
+                case OpenWBEM::CIMDataType::STRING:
+                    v = YCPString(cv.toString().c_str());
+                    instance->add(name, v);
+                    break;
+                case OpenWBEM::CIMDataType::EMBEDDEDCLASS:
+                    v = YCPString(cv.toString().c_str());
+                    instance->add(name, v);
+                    break;
+                case OpenWBEM::CIMDataType::DATETIME:
+                    v = YCPString(cv.toString().c_str());
+                    instance->add(name, v);
+                    break;
+                case OpenWBEM::CIMDataType::UINT64:
+                    cv.get(aa);
+                    instance->add(name, YCPInteger((int) aa));
+                    break;
+                case OpenWBEM::CIMDataType::UINT32:
+                    y2debug("%s uint32", name->value().c_str());
+                    cv.get(ab);
+                    instance->add(name, YCPInteger((int) ab));
+                    break;
+                case OpenWBEM::CIMDataType::UINT16:
+                    cv.get(ac);
+                    instance->add(name, YCPInteger((int) ac));
+                    break;
+                case OpenWBEM::CIMDataType::BOOLEAN:
+                    instance->add(name, YCPBoolean(cv.toString().c_str()));
+                    break;
+                default:
+                    instance->add(name, YCPVoid());
+                    break;
+                }
+            }
+        }
+        else
+        {
+            instance->add(name, YCPVoid());
+        }
+    }
+
+    return instance;
+}
 
 // EnumInstances
 //
@@ -232,61 +438,170 @@ YCPValue CIMFunctions::EnumerateInstances (const YCPString& classname)
 
     while (result.hasMoreElements())
     {
-        YCPMap instance;
         OpenWBEM::CIMInstance i = result.nextElement();
-        OpenWBEM::CIMPropertyArray props = i.getProperties();
+        cop = OpenWBEM::CIMObjectPath("root/cimv2", i);
 
-	if (! i)
-	{
-	    y2error ("Nonexistent cop\n");
-	    continue;
-	}
+        if (! cop)
+        {
+            y2error ("Nonexistent cop\n");
+            continue;
+        }
+
+        result_list->add (GetInstanceI(cop));
+        //result_list->add (YCPMap());
+    }
+
+
+    /*
+    YCPList result_list;
+
+    while (result.hasMoreElements())
+    {
+        YCPMap instance;
+        OpenWBEM::CIMInstance in = result.nextElement();
+        OpenWBEM::CIMPropertyArray props = in.getProperties(OpenWBEM::CIMDataType::INVALID);
+
+
+
+        y2debug("debug 1");
+
         for (size_t i = 0; i < props.size(); ++i)
         {
             OpenWBEM::CIMProperty& p = props[i];
             YCPValue v;
-            if (p.getDataType().getType() == OpenWBEM::CIMDataType::CIMNULL)
+
+            CIMValue cv = p.getValue();
+            YCPString name(p.getName().toString().c_str());
+            OpenWBEM::String pname = p.getName();
+            if (cv)
             {
-                instance->add(YCPString(p.getName().toString().c_str()), YCPVoid());
-            }
-            else if (p.getDataType().getType() == OpenWBEM::CIMDataType::STRING)
-            {
-                v = YCPString(p.getValue().toString().c_str());
-                instance->add(YCPString(p.getName().toString().c_str()), v);
-            }
-            else if (p.getDataType().getType() == OpenWBEM::CIMDataType::BOOLEAN)
-            {
-                instance->add(YCPString(p.getName().toString().c_str()), YCPBoolean(p.getValue().toString().c_str()));
+                y2debug("property= %s, datatype %s", 
+                        name->value().c_str(),
+                        p.getDataType().toString().c_str());
+                if (p.getDataType().isArrayType())
+                {
+                    y2debug("is array");
+                    YCPList a = arrayValueToList(cv);
+                    instance->add(name, a);
+                }
+                else if (p.getDataType().isReferenceType())
+                {
+                    y2debug("is reference");
+                }
+                else 
+                {
+                    OpenWBEM::UInt64 aa;
+                    OpenWBEM::UInt32 ab;
+                    OpenWBEM::UInt16 ac;
+
+                    switch (p.getDataType().getType())
+                    {
+                    case OpenWBEM::CIMDataType::CIMNULL:
+                        instance->add(name, YCPVoid());
+                        break;
+                    case OpenWBEM::CIMDataType::STRING:
+                        v = YCPString(cv.toString().c_str());
+                        instance->add(name, v);
+                        break;
+                    case OpenWBEM::CIMDataType::EMBEDDEDCLASS:
+                        v = YCPString(cv.toString().c_str());
+                        instance->add(name, v);
+                        break;
+                    case OpenWBEM::CIMDataType::DATETIME:
+                        v = YCPString(cv.toString().c_str());
+                        instance->add(name, v);
+                        break;
+                    case OpenWBEM::CIMDataType::UINT64:
+                        cv.get(aa);
+                        instance->add(name, YCPInteger((int) aa));
+                        break;
+                    case OpenWBEM::CIMDataType::UINT32:
+                        y2debug("%s uint32", name->value().c_str());
+                        cv.get(ab);
+                        instance->add(name, YCPInteger((int) ab));
+                        break;
+                    case OpenWBEM::CIMDataType::UINT16:
+                        cv.get(ac);
+                        instance->add(name, YCPInteger((int) ac));
+                        break;
+                    case OpenWBEM::CIMDataType::BOOLEAN:
+                        instance->add(name, YCPBoolean(cv.toString().c_str()));
+                        break;
+                    default:
+                        instance->add(name, YCPVoid());
+                        break;
+                    }
+                }
             }
             else
             {
-                instance->add(YCPString(p.getName().toString().c_str()), YCPString(""));
+                instance->add(name, YCPVoid());
             }
 
         }
 	
 	result_list->add (instance); 
     }
+    */
 
     return result_list;
 }
 
-// EnumerateClassNames
+// EnumerateClasses
 //
-YCPValue CIMFunctions::EnumerateClassNames (const YCPString& classname)
+YCPValue CIMFunctions::EnumerateClasses (const YCPString& classname, 
+        const YCPSymbol& DeepFlag)
 {
+
+    WBEMFlags::EDeepFlag deep = WBEMFlags::E_SHALLOW;
+    string flag = DeepFlag->symbol();
+    if (flag == "deep")
+    {
+        y2debug("Deep selected");
+        deep = WBEMFlags::E_DEEP;
+    }
+    else if (flag == "shallow")
+    {
+        y2debug("Shallow selected");
+        deep = WBEMFlags::E_SHALLOW;
+    }
+
     try
     {
-        OpenWBEM::StringEnumeration enu = client()->enumClassNamesE 
+        OpenWBEM::CIMClassEnumeration enu = client()->enumClassE
             ( OpenWBEM::String( classname->value ().c_str () ),
-           WBEMFlags::E_SHALLOW ); 
+           deep ); 
 
         YCPList result_list;
 
         while (enu.hasMoreElements())
         {
-            result_list->add (YCPString(enu.nextElement().c_str() )); 
-            //y2debug("%s", enu.nextElement().c_str());
+            YCPMap cls;
+            YCPValue v;
+            OpenWBEM::CIMClass c = enu.nextElement();
+            OpenWBEM::CIMPropertyArray props = c.getProperties();
+            for (size_t i = 0; i < props.size(); ++i)
+            {
+                OpenWBEM::CIMProperty& p = props[i];
+                if (p.getDataType().getType() == OpenWBEM::CIMDataType::CIMNULL)
+                {
+                    cls->add(YCPString(p.getName().toString().c_str()), YCPVoid());
+                }
+                else if (p.getDataType().getType() == OpenWBEM::CIMDataType::STRING)
+                {
+                    v = YCPString(p.getValue().toString().c_str());
+                    cls->add(YCPString(p.getName().toString().c_str()), v);
+                }
+                else if (p.getDataType().getType() == OpenWBEM::CIMDataType::BOOLEAN)
+                {
+                    cls->add(YCPString(p.getName().toString().c_str()), YCPBoolean(p.getValue().toString().c_str()));
+                }
+                else
+                {
+                    cls->add(YCPString(p.getName().toString().c_str()), YCPString(""));
+                }
+            }
+            result_list->add (cls ); 
         }
         return result_list;
     }
@@ -298,3 +613,52 @@ YCPValue CIMFunctions::EnumerateClassNames (const YCPString& classname)
     }
 }
 
+
+// EnumerateClassNames
+//
+YCPValue CIMFunctions::EnumerateClassNames (const YCPString& classname, 
+        const YCPSymbol& DeepFlag)
+{
+
+    WBEMFlags::EDeepFlag deep = WBEMFlags::E_SHALLOW;
+    string flag = DeepFlag->symbol();
+    if (flag == "deep")
+    {
+        y2debug("Deep selected");
+        deep = WBEMFlags::E_DEEP;
+    }
+    else if (flag == "shallow")
+    {
+        y2debug("Shallow selected");
+        deep = WBEMFlags::E_SHALLOW;
+    }
+
+    try
+    {
+        OpenWBEM::StringEnumeration enu = client()->enumClassNamesE 
+            ( OpenWBEM::String( classname->value ().c_str () ),
+           deep ); 
+
+        YCPList result_list;
+
+        while (enu.hasMoreElements())
+        {
+            result_list->add (YCPString(enu.nextElement().c_str() )); 
+        }
+        return result_list;
+    }
+
+    catch (OpenWBEM::CIMException &e)
+    {
+        y2error("%s", e.getMessage());
+        return YCPVoid();
+    }
+}
+
+// EnumerateClassNames
+//
+YCPValue CIMFunctions::LastError ()
+{
+
+    return(YCPString(""));
+}
