@@ -1,6 +1,6 @@
 @HEADER-COMMENT@
 
-# neededforbuild yast2-core openwbem openwbem-devel
+# neededforbuild gpp libgpp  yast2-devtools  yast2-core yast2-core-devel doxygen openwbem openwbem-devel libxcrypt libxcrypt-devel expect dejagnu liby2util liby2util-devel
 
 @HEADER@
 Summary:	-
@@ -20,3 +20,7 @@ Summary:	-
 
 %files
 %defattr(-,root,root)
+@plugindir@/libpy2CIM.so.*
+@plugindir@/libpy2CIM.so
+@plugindir@/libpy2CIM.la
+%doc @docdir@
