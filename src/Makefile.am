@@ -24,11 +24,10 @@ INCLUDES =					\
 
 BUILT_SOURCES = CIMBuiltinTable.h CIMBuiltinCalls.h
 
-CIMBuiltinTable.h : CIMFunctions.h
-	${ydatadir}/devtools/bin/generateYCPWrappers CIMFunctions.h CIMBuiltinCalls.h CIMBuiltinTable.h
-
-#CIMBuiltinCalls.h : CIMFunctions.h
-#	${ydatadir}/devtools/bin/generateYCPWrappers CIMModuleFunctions.h CIMBuiltinCalls.h CIMBuiltinTable.h
+# "foo bar: baz" is wrong
+# see "info '(automake)Multiple Outputs'"
+%BuiltinCalls.h %BuiltinTable.h : %Functions.h
+	${ydatadir}/devtools/bin/generateYCPWrappers $< $*BuiltinCalls.h $*BuiltinTable.h
 
 CLEANFILES = $(BUILT_SOURCES)
 
