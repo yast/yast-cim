@@ -1,0 +1,22 @@
+@HEADER-COMMENT@
+
+# neededforbuild
+
+@HEADER@
+Summary:	-
+
+%description
+-
+
+-
+
+@PREP@
+
+@BUILD@
+
+@INSTALL@
+
+@CLEAN@
+
+%files
+%defattr(-,root,root)
