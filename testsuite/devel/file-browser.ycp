@@ -8,11 +8,50 @@
     import "Label";
     import "HTML";
 
+    string cop = "";
 
+    /**
+     * Get directory name
+     * @param string path
+     * @return  string dirname
+     */
+    define string dirname (string filePath)
+	``{
+	   list pathComponents = splitstring(filePath, "/");
+	   string last = pathComponents[size(pathComponents) -1]:"";
+	   string ret = substring(filePath, 0 , size(filePath) - size(last));
+	   return (ret);
+    }
+
+    /**
+     * Basename
+     * @param string path
+     * @return string  basename
+     */
+    define string basename (string filePath)
+	``{
+	list pathComponents = splitstring(filePath, "/");
+	string ret = pathComponents[size(pathComponents) -1 ]: "";
+	return ( ret );
+    }
+
+
+
+
+    string getDate(string date)
+    {
+        string year = substring(date, 0 , 4);
+        string month = substring(date, 2 , 2);
+        string day = substring(date, 4 , 2);
+        string hour = substring(date, 6 , 2);
+        string min = substring(date, 8 , 2);
+
+        return sformat("%1-%2-%3 %4:%5", year, month, day, hour, min);
+    }
     string currCop(string dir)
     {
-        string cop = sformat("/root/cimv2:Novell_LinuxDirectory.Name=\"%1\",CreationClassName=\"Novell_LinuxDirectory\",FSCreationClassName=\"fluff\",FSName=\"fluff\",CSCreationClassName=\"fluff\",CSName=\"fluff\"", dir);
-        return cop;
+        string _cop = sformat("/root/cimv2:Novell_LinuxDirectory.Name=\"%1\",CreationClassName=\"Novell_LinuxDirectory\",FSCreationClassName=\"fluff\",FSName=\"fluff\",CSCreationClassName=\"fluff\",CSName=\"fluff\"", dir);
+        return _cop;
     }
 
     include "partitioning/partition_defines.ycp";
@@ -37,8 +76,8 @@
     term contents =
         `Top(
                 `VBox(
-                    `Table(`id(`dir),
-                        `header("", "Name", "Size"),
+                    `Table(`id(`dir),`opt(`notify),
+                        `header("", "Name", "Size", "Last Modified"),
                         [] )
                     )
             );
@@ -58,6 +97,10 @@
     Wizard::HideAbortButton();
     Wizard::DisableBackButton();
 
+
+
+
+
     map getModes(map inst) 
     {
 
@@ -69,10 +112,10 @@
         cdata["FSName"] = "fluff";
         cdata["CSName"] = "fluff";
 
-        string cop = CIM::CreateObjectPath("root/cimv2", 
+        string _cop = CIM::CreateObjectPath("root/cimv2", 
                 "Novell_LinuxFile", cdata);
 
-        map posixFileInst = CIM::GetInstance(cop);
+        map posixFileInst = CIM::GetInstance(_cop);
         //y2debug("instance: %1", inst);
         //y2debug("cop: %1", cop);
         //y2debug("posixFileInst: %1", posixFileInst);
@@ -80,7 +123,7 @@
         string modes = "";
         string target = "";
         string CreationClassName = inst["CreationClassName", "value"]:"";
-        y2debug("Name: %1", inst["Name", "value"]:"" );
+        //y2debug("Name: %1", inst["Name", "value"]:"" );
         if (CreationClassName == "Novell_LinuxSymbolicLink")
         {
             modes = "lrwxrwxrwx";
@@ -88,7 +131,6 @@
         }
         else
         {
-            y2debug("modes 1: %1", modes);
             if (CreationClassName=="Novell_LinuxDirectory")
                 modes = "d";
             else
@@ -134,30 +176,40 @@
         }
 
         return $["modes":modes, "target": target];
-            
     }
 
+
+    
     list dirItems(string dir)
     {
-        string cop = currCop(dir);
         list<map> assoc = CIM::Associators(cop, "Novell_LinuxDirectoryContainsFile", "", "GroupComponent", "PartComponent");
         list files = maplist(map inst, assoc, {
                 string name = inst["Name", "value"]:"";
                 integer fsize = inst["FileSize", "value"]:0;
+                string lm = inst["LastModified", "value"]:"";
+
+                string type = "d";
+                if (inst["CreationClassName", "value"]:"" == "Novell_LinuxDirectory")
+                {
+                    type = "d";
+                } else {
+                    type = "f";
+                }
                 map m = getModes(inst);
                 if (name != nil)
                 {
                 if (m["target"]:""!="")
                     name = name + "-> " + m["target"]:"";
-                return(`item(`id(name), m["modes"]:"", name, fsize));
+                return(`item(`id(type + "_" + name), m["modes"]:"", basename(name), fsize, getDate(lm)));
                 }
                 else
                 {
                 return(`item(`id(`none), "", "", 0));
                 }
                 });
-        return files;
 
+        files=prepend(files, `item(`id("up"), "", "..", "", ""));
+        return files;
     }
 
 
@@ -176,8 +228,30 @@
         {
             host = Wizard::QueryTreeItem();
             CIM::Connect(host, "root/cimv2");
+            cop = currCop("/root");
             list items = dirItems("/root");
             UI::ChangeWidget(`id(`dir), `Items, items);
+        } 
+        else if (input == `dir)
+        {
+            string d = (string)UI::QueryWidget(`id(`dir), `CurrentItem);
+            list dd = splitstring(d, "_");
+            y2debug("dir: %1", d);
+            if (dd[0]:"" == "d")
+            {
+                cop = currCop(substring(d, 2, size(d)));
+                list items = dirItems(substring(d, 2, size(d)));
+                UI::ChangeWidget(`id(`dir), `Items, items);
+            }
+            else if (d == "up")
+            {
+                list<string> an = CIM::AssociatorNames( cop, "Novell_LinuxDirectoryContainsFile", "Novell_LinuxDirectory", "PartComponent",
+                                                        "GroupComponent");
+                y2debug("Names: %1", an);
+                cop = an[0]:"";
+                list items = dirItems("");
+                UI::ChangeWidget(`id(`dir), `Items, items);
+            }
         }
     } until (input == `next || input == `abort || input == `cancel);
 

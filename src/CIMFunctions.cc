@@ -548,6 +548,7 @@ YCPValue CIMFunctions::GetInstance (OpenWBEM::CIMObjectPath path)
         YCPMap qualifiers;
         YCPMap propertyMap;
 
+        /*
         for (size_t iq = 0; iq < q.size(); ++iq)
         {
             CIMValue qv = q[iq].getValue();
@@ -555,6 +556,7 @@ YCPValue CIMFunctions::GetInstance (OpenWBEM::CIMObjectPath path)
             qualifiers->add(YCPString(q[iq].getName().c_str()), ValueToAny(qv) );
 
         }
+        */
         propertyMap->add(YCPString("qualifiers"), qualifiers );
 
         CIMValue cv = p.getValue();
