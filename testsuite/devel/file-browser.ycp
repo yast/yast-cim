@@ -1,0 +1,188 @@
+{
+    textdomain "cim-browser";
+
+    import "CIM";
+    import "SLP";
+
+    import "Wizard";
+    import "Label";
+    import "HTML";
+
+
+    string currCop(string dir)
+    {
+        string cop = sformat("/root/cimv2:Novell_LinuxDirectory.Name=\"%1\",CreationClassName=\"Novell_LinuxDirectory\",FSCreationClassName=\"fluff\",FSName=\"fluff\",CSCreationClassName=\"fluff\",CSName=\"fluff\"", dir);
+        return cop;
+    }
+
+    include "partitioning/partition_defines.ycp";
+
+    define list<map> fillTree(list<map> res)
+    {
+        list<map> Tree = [];
+        foreach(map srvs,  res, ``{
+                Tree =Wizard::AddTreeItem(Tree, "", srvs["pcHost"]:"",
+                    srvs["pcHost"]:"");
+                });
+
+        return Tree;
+    }
+
+
+    
+    string wbem = "service:wbem:http";
+    list<map> response = SLP::FindSrvs(wbem, "");
+    list treeItems = [];
+
+    term contents =
+        `Top(
+                `VBox(
+                    `Table(`id(`dir),
+                        `header("", "Name", "Size"),
+                        [] )
+                    )
+            );
+
+
+    string title = _("Remote File Browser");
+    Wizard::CreateTreeDialog();
+    Wizard::SetDesktopIcon("slp");
+    list<map> Tree = fillTree(response);
+    y2debug("Tree=%1", Tree);
+    Wizard::CreateTree(Tree, _("Hosts") );
+
+    string help = dgettext("base", "No help available");
+    Wizard::SetContentsButtons(title, contents, help, Label::BackButton(),
+            Label::FinishButton());
+
+    Wizard::HideAbortButton();
+    Wizard::DisableBackButton();
+
+    map getModes(map inst) 
+    {
+
+        map<string,any> cdata = $[];
+        cdata["LFName"] = inst["Name", "value"]:"";
+        cdata["LFCreationClassName"] = "fluff";
+        cdata["FSCreationClassName"] = "fluff";
+        cdata["CSCreationClassName"] = "fluff";
+        cdata["FSName"] = "fluff";
+        cdata["CSName"] = "fluff";
+
+        string cop = CIM::CreateObjectPath("root/cimv2", 
+                "Novell_LinuxFile", cdata);
+
+        map posixFileInst = CIM::GetInstance(cop);
+        //y2debug("instance: %1", inst);
+        //y2debug("cop: %1", cop);
+        //y2debug("posixFileInst: %1", posixFileInst);
+
+        string modes = "";
+        string target = "";
+        string CreationClassName = inst["CreationClassName", "value"]:"";
+        y2debug("Name: %1", inst["Name", "value"]:"" );
+        if (CreationClassName == "Novell_LinuxSymbolicLink")
+        {
+            modes = "lrwxrwxrwx";
+            target = inst["TargetFile", "value"]:"";
+        }
+        else
+        {
+            y2debug("modes 1: %1", modes);
+            if (CreationClassName=="Novell_LinuxDirectory")
+                modes = "d";
+            else
+                modes = "-";
+
+            if (posixFileInst["UserReadable","value"]:false)
+                modes = modes + "r";
+            else 
+                modes =modes +  "-";
+            if (posixFileInst["UserWritable","value"]:false)
+                modes = modes +  "w";
+            else  
+                modes =modes + "-";
+            if (posixFileInst["UserExecutable","value"]:false)
+                modes =modes +"x";
+            else
+                modes =modes +  "-";
+            if (posixFileInst["GroupReadable","value"]:false)
+                modes =modes + "r";
+            else  
+                modes =modes +  "-";
+            if (posixFileInst["GroupWritable","value"]:false)  
+                modes =modes + "w";
+            else 
+                modes =modes + "-";
+            if (posixFileInst["GroupExecutable","value"]:false)
+                modes =modes +  "x";
+            else 
+                modes =modes + "-";
+            if (posixFileInst["WorldReadable","value"]:false)
+                modes =modes + "r";
+            else 
+                modes =modes + "-";
+            if (posixFileInst["WorldWritable","value"]:false)
+                modes =modes + "w";
+            else
+                modes =modes + "-";
+            if (posixFileInst["WorldExecutable","value"]:false)
+                modes =modes + "x";
+            else
+                modes =modes + "-";
+                
+        }
+
+        return $["modes":modes, "target": target];
+            
+    }
+
+    list dirItems(string dir)
+    {
+        string cop = currCop(dir);
+        list<map> assoc = CIM::Associators(cop, "Novell_LinuxDirectoryContainsFile", "", "GroupComponent", "PartComponent");
+        list files = maplist(map inst, assoc, {
+                string name = inst["Name", "value"]:"";
+                integer fsize = inst["FileSize", "value"]:0;
+                map m = getModes(inst);
+                if (name != nil)
+                {
+                if (m["target"]:""!="")
+                    name = name + "-> " + m["target"]:"";
+                return(`item(`id(name), m["modes"]:"", name, fsize));
+                }
+                else
+                {
+                return(`item(`id(`none), "", "", 0));
+                }
+                });
+        return files;
+
+    }
+
+
+
+    any input = nil;
+    repeat {
+
+        string host = "";
+        map event = UI::WaitForEvent();
+        input = event["ID"]:nil;
+        if (input == `wizardTree)
+            input = UI::QueryWidget(`id(`wizardTree), `CurrentItem);
+
+        y2debug("input: %1", input);
+        if (is(input, string))
+        {
+            host = Wizard::QueryTreeItem();
+            CIM::Connect(host, "root/cimv2");
+            list items = dirItems("/root");
+            UI::ChangeWidget(`id(`dir), `Items, items);
+        }
+    } until (input == `next || input == `abort || input == `cancel);
+
+    UI::CloseDialog();
+    return input;
+    // EOF
+
+}

@@ -46,7 +46,7 @@ class CIMFunctions : public Y2Namespace
 	YCPValue EnumerateInstanceNames (const YCPString& classname);
 
 	// general
-	/* TYPEINFO: list<string>(string) */
+	/* TYPEINFO: list<map<string,any>>(string) */
 	YCPValue EnumerateInstances (const YCPString& classname);
 
 
@@ -60,12 +60,33 @@ class CIMFunctions : public Y2Namespace
 
 	// general
 	/* TYPEINFO: map<string,any>(string) */
-        YCPValue GetInstance (const YCPString& instanceName );
+        YCPValue GetInstance (const YCPString& objectName );
 
 
 	// general
 	/* TYPEINFO: boolean(string) */
-        YCPValue DeleteInstance (const YCPString& instanceName );
+        YCPValue DeleteInstance (const YCPString& objectName );
+
+	// general
+	/* TYPEINFO: list<string>(string) */
+        YCPValue ReferenceNames (const YCPString& objectName );
+
+	// general
+	/* TYPEINFO: list<map<string,any>>(string,string,string) */
+        YCPValue References (const YCPString& objectName ,const YCPString& resultClass, const YCPString& role);
+        
+	// general
+	/* TYPEINFO: list<string>(string,string,string,string,string) */
+        YCPValue AssociatorNames (const YCPString& objectName, const YCPString& assocClass, const YCPString& resultClass, const YCPString& role, const YCPString& resultRole);
+
+	// general
+	/* TYPEINFO: list<map<string,any>>(string,string,string,string,string) */
+        YCPValue Associators (const YCPString& objectName, const YCPString& assocClass, const YCPString& resultClass, const YCPString& role, const YCPString& resultRole);
+        
+
+	// general
+	/* TYPEINFO: string(string,string,map<string,any>) */
+        YCPValue CreateObjectPath(const YCPString& ns, const YCPString& className, const YCPMap& pathMap);
 
 	// general
 	/* TYPEINFO: string() */
@@ -117,8 +138,22 @@ class CIMFunctions : public Y2Namespace
 	OpenWBEM::CIMClient* client ();
         YCPList arrayValueToList(const OpenWBEM::CIMValue& value);
         YCPValue ValueToAny(const OpenWBEM::CIMValue &value);
-        YCPValue GetInstanceI ( const OpenWBEM::CIMObjectPath path );
+        YCPValue GetInstance ( const OpenWBEM::CIMObjectPath path );
         YCPValue DeleteInstance (const OpenWBEM::CIMObjectPath path );
+        YCPValue ReferenceNames (const OpenWBEM::CIMObjectPath path );
+        YCPValue AssociatorNames (const OpenWBEM::CIMObjectPath path, 
+                const YCPString& assocClass,
+                const YCPString& resultClass,
+                const YCPString& role,
+                const YCPString& resultRole);
+
+        YCPValue Associators (const OpenWBEM::CIMObjectPath path, 
+                const YCPString& assocClass,
+                const YCPString& resultClass,
+                const YCPString& role,
+                const YCPString& resultRole);
+
+        YCPValue References (const OpenWBEM::CIMObjectPath path ,const YCPString& resultClass, const YCPString& role);
 
         bool cimomAvailable(OpenWBEM::CIMClient *client);
 

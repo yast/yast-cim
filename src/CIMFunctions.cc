@@ -52,6 +52,7 @@ class Y2CIMFunction: public Y2Function
     YCPValue m_param2;
     YCPValue m_param3;
     YCPValue m_param4;
+    YCPValue m_param5;
     public:
 
     Y2CIMFunction (CIMFunctions* instance, unsigned int pos);    
@@ -71,6 +72,7 @@ m_position (pos)
 , m_param2 ( YCPNull () )
 , m_param3 ( YCPNull () )
 , m_param4 ( YCPNull () )
+, m_param5 ( YCPNull () )
 {
 };
 
@@ -82,6 +84,7 @@ bool Y2CIMFunction::attachParameter (const YCPValue& arg, const int position)
     case 1: m_param2 = arg; break; 
     case 2: m_param3 = arg; break; 
     case 3: m_param4 = arg; break; 
+    case 4: m_param5 = arg; break; 
     default: return false;
     }
 
@@ -112,6 +115,10 @@ bool Y2CIMFunction::appendParameter (const YCPValue& arg)
     {
         m_param4 = arg;
         return true;
+    } else if (m_param5.isNull ())
+    {
+        m_param5 = arg;
+        return true;
     }
     y2internal ("appendParameter > 3 not implemented");
     return false;
@@ -138,6 +145,7 @@ bool Y2CIMFunction::reset ()
     m_param2 = YCPNull ();
     m_param3 = YCPNull ();
     m_param4 = YCPNull ();
+    m_param5 = YCPNull ();
 
     return true;
 }
@@ -183,6 +191,9 @@ OpenWBEM::CIMClient* CIMFunctions::client ()
     return m_client;
 }
 
+
+// Check if CIMOM is available
+//
 bool CIMFunctions::cimomAvailable(OpenWBEM::CIMClient *client)
 {
     try
@@ -228,6 +239,7 @@ YCPValue CIMFunctions::Connect (const YCPString& url, const YCPString& ns)
 
 
 // EnumerateInstanceNames
+//
 YCPValue CIMFunctions::EnumerateInstanceNames (const YCPString& classname)
 {
     try
@@ -472,15 +484,15 @@ YCPValue CIMFunctions::ValueToAny(const OpenWBEM::CIMValue &value)
 
 // DeleteInstance
 //
-YCPValue CIMFunctions::DeleteInstance (const YCPString& instanceName )
+YCPValue CIMFunctions::DeleteInstance (const YCPString& objectName )
 {
 
     OpenWBEM::CIMObjectPath cop;
-    cop = OpenWBEM::CIMObjectPath::parse(instanceName->value().c_str());
+    cop = OpenWBEM::CIMObjectPath::parse(objectName->value().c_str());
     return  DeleteInstance(cop);
 }
 
-// DeleteInstance
+// DeleteInstance (internal)
 //
 YCPValue CIMFunctions::DeleteInstance (OpenWBEM::CIMObjectPath path )
 {
@@ -502,22 +514,23 @@ YCPValue CIMFunctions::DeleteInstance (OpenWBEM::CIMObjectPath path )
 
 // GetInstance
 //
-YCPValue CIMFunctions::GetInstance (const YCPString& instanceName )
+YCPValue CIMFunctions::GetInstance (const YCPString& objectName )
 {
 
     OpenWBEM::CIMObjectPath cop;
-    cop = OpenWBEM::CIMObjectPath::parse(instanceName->value().c_str());
-    return (GetInstanceI(cop));
+    cop = OpenWBEM::CIMObjectPath::parse(objectName->value().c_str());
+    return (GetInstance(cop));
 }
 
 // GetInstance
 //
-YCPValue CIMFunctions::GetInstanceI (OpenWBEM::CIMObjectPath path)
+YCPValue CIMFunctions::GetInstance (OpenWBEM::CIMObjectPath path)
 {
 
     if (!cimomAvailable(m_client))
         return YCPVoid();
 
+    try {
     OpenWBEM::CIMInstance result = client()->getInstance ( path  ); 
 
     YCPMap instance;
@@ -537,7 +550,6 @@ YCPValue CIMFunctions::GetInstanceI (OpenWBEM::CIMObjectPath path)
 
         for (size_t iq = 0; iq < q.size(); ++iq)
         {
-            y2debug("Qualifier: %s ", q[iq].getName().c_str() );
             CIMValue qv = q[iq].getValue();
 
             qualifiers->add(YCPString(q[iq].getName().c_str()), ValueToAny(qv) );
@@ -555,6 +567,15 @@ YCPValue CIMFunctions::GetInstanceI (OpenWBEM::CIMObjectPath path)
     }
 
     return instance;
+    }
+
+    catch (OpenWBEM::CIMException &e)
+    {
+        y2error("%s", e.getMessage());
+        return YCPVoid();
+    }
+
+
 }
 
 // EnumInstances
@@ -590,7 +611,7 @@ YCPValue CIMFunctions::EnumerateInstances (const YCPString& classname)
         }
 
         y2debug("Getting Instance: %s", cop.toString().c_str());
-        result_list->add (GetInstanceI(cop));
+        result_list->add (GetInstance(cop));
     }
 
     return result_list;
@@ -643,7 +664,6 @@ YCPValue CIMFunctions::EnumerateClasses (const YCPString& classname,
 
                 for (size_t iq = 0; iq < q.size(); ++iq)
                 {
-                    y2debug("Qualifier: %s ", q[iq].getName().c_str() );
                     CIMValue qv = q[iq].getValue();
 
                     qualifiers->add(YCPString(q[iq].getName().c_str()), ValueToAny(qv) );
@@ -715,6 +735,269 @@ YCPValue CIMFunctions::EnumerateClassNames (const YCPString& classname,
         y2error("%s", e.getMessage());
         return YCPVoid();
     }
+}
+
+// AssociatorNames
+//
+YCPValue CIMFunctions::AssociatorNames (
+        const YCPString& objectName,
+        const YCPString& assocClass,
+        const YCPString& resultClass,
+        const YCPString& role,
+        const YCPString& resultRole
+        )
+{
+    OpenWBEM::CIMObjectPath cop;
+    cop = OpenWBEM::CIMObjectPath::parse(objectName->value().c_str());
+    return  AssociatorNames(cop, 
+            assocClass, 
+            resultClass,
+            role,
+            resultRole);
+}
+
+
+// AssociatorNames
+//
+YCPValue CIMFunctions::AssociatorNames( const OpenWBEM::CIMObjectPath objectName,
+        const YCPString& assocClass,
+        const YCPString& resultClass,
+        const YCPString& role,
+        const YCPString& resultRole
+        )
+{
+    
+    if (!cimomAvailable(m_client))
+        return YCPVoid();
+    try
+    {
+        OpenWBEM::CIMObjectPathEnumeration result = client()->associatorNamesE ( objectName,
+                assocClass->value().c_str(),
+                resultClass->value().c_str(),
+                role->value().c_str(),
+                resultRole->value().c_str()
+                ); 
+
+        YCPList result_list;
+        OpenWBEM::CIMObjectPath cop;
+
+        while (result.hasMoreElements())
+        {
+            result.nextElement(cop);
+
+            if (! cop)
+            {
+                y2error ("Nonexistent cop\n");
+                continue;
+            }
+
+            result_list->add (YCPString(cop.toString().c_str())); 
+        }
+
+        return result_list;
+    }
+
+    catch (OpenWBEM::CIMException &e)
+    {
+        y2error("%s", e.getMessage());
+        return YCPVoid();
+    }
+}
+
+// Associators
+//
+YCPValue CIMFunctions::Associators (
+        const YCPString& objectName,
+        const YCPString& assocClass,
+        const YCPString& resultClass,
+        const YCPString& role,
+        const YCPString& resultRole
+        )
+{
+    OpenWBEM::CIMObjectPath cop;
+    cop = OpenWBEM::CIMObjectPath::parse(objectName->value().c_str());
+    return  Associators(cop, 
+            assocClass, 
+            resultClass,
+            role,
+            resultRole);
+}
+
+
+// Associators
+//
+YCPValue CIMFunctions::Associators( const OpenWBEM::CIMObjectPath objectName,
+        const YCPString& assocClass,
+        const YCPString& resultClass,
+        const YCPString& role,
+        const YCPString& resultRole
+        )
+{
+    
+    if (!cimomAvailable(m_client))
+        return YCPVoid();
+    try
+    {
+        OpenWBEM::CIMInstanceEnumeration result = client()->associatorsE ( objectName,
+                assocClass->value().c_str(),
+                resultClass->value().c_str(),
+                role->value().c_str(),
+                resultRole->value().c_str()
+                ); 
+
+        YCPList result_list;
+        OpenWBEM::CIMObjectPath cop;
+
+        y2debug("Number of instances: %d", result.numberOfElements());
+        while (result.hasMoreElements())
+        {
+            OpenWBEM::CIMInstance i = result.nextElement();
+            cop = OpenWBEM::CIMObjectPath("root/cimv2", i);
+
+            if (! cop)
+            {
+                y2error ("Nonexistent cop\n");
+                continue;
+            }
+
+            y2debug("Getting Instance: %s", cop.toString().c_str());
+            result_list->add (GetInstance(cop));
+        }
+
+        return result_list;
+    }
+
+    catch (OpenWBEM::CIMException &e)
+    {
+        y2error("%s", e.getMessage());
+        return YCPVoid();
+    }
+}
+
+
+// ReferenceNames
+//
+YCPValue CIMFunctions::ReferenceNames (const YCPString& objectName )
+{
+
+    OpenWBEM::CIMObjectPath cop;
+    cop = OpenWBEM::CIMObjectPath::parse(objectName->value().c_str());
+    return  ReferenceNames(cop);
+}
+
+
+// ReferenceNames
+//
+YCPValue CIMFunctions::ReferenceNames( const OpenWBEM::CIMObjectPath objectName )
+{
+    
+    if (!cimomAvailable(m_client))
+        return YCPVoid();
+    try
+    {
+        OpenWBEM::CIMObjectPathEnumeration result = client()->referenceNamesE ( objectName ); 
+
+        YCPList result_list;
+        OpenWBEM::CIMObjectPath cop;
+
+        while (result.hasMoreElements())
+        {
+            result.nextElement(cop);
+
+            if (! cop)
+            {
+                y2error ("Nonexistent cop\n");
+                continue;
+            }
+
+            result_list->add (YCPString(cop.toString().c_str())); 
+        }
+
+        return result_list;
+    }
+
+    catch (OpenWBEM::CIMException &e)
+    {
+        y2error("%s", e.getMessage());
+        return YCPVoid();
+    }
+}
+
+
+
+
+
+// References
+//
+YCPValue CIMFunctions::References (const YCPString& objectName,
+        const YCPString& resultClass,
+        const YCPString& role)
+{
+
+    OpenWBEM::CIMObjectPath cop;
+    cop = OpenWBEM::CIMObjectPath::parse(objectName->value().c_str());
+    return  References(cop, resultClass, role);
+}
+
+
+// References
+//
+YCPValue CIMFunctions::References( const OpenWBEM::CIMObjectPath objectName,
+       const YCPString& resultClass,
+       const YCPString& role)
+{
+
+    if (!cimomAvailable(m_client))
+        return YCPVoid();
+    try
+    {
+        OpenWBEM::CIMInstanceEnumeration result = client()->referencesE ( 
+                objectName , 
+                resultClass->value().c_str(),
+                role->value().c_str()); 
+        YCPList result_list;
+        OpenWBEM::CIMObjectPath cop;
+
+        y2debug("Number of instances: %d", result.numberOfElements());
+        while (result.hasMoreElements())
+        {
+            OpenWBEM::CIMInstance i = result.nextElement();
+            cop = OpenWBEM::CIMObjectPath("root/cimv2", i);
+
+            if (! cop)
+            {
+                y2error ("Nonexistent cop\n");
+                continue;
+            }
+
+            y2debug("Getting Instance: %s", cop.toString().c_str());
+            result_list->add (GetInstance(cop));
+        }
+
+        return result_list;
+    }
+
+    catch (OpenWBEM::CIMException &e)
+    {
+        y2error("%s", e.getMessage());
+        return YCPVoid();
+    }
+}
+
+
+
+
+YCPValue CIMFunctions::CreateObjectPath(const YCPString& ns, const YCPString& className, const YCPMap& pathMap) {
+
+    OpenWBEM::CIMObjectPath cop(className->value().c_str(), ns->value().c_str());
+
+    for (YCPMapIterator i = pathMap->begin(); i != pathMap->end (); i++)
+    {
+        cop.setKeyValue(i.key()->asString()->value().c_str(), 
+                OpenWBEM::CIMValue(i.value()->asString()->value().c_str()) );
+    }
+
+    return YCPString(cop.toString().c_str());
 }
 
 // LastError
