@@ -62,6 +62,11 @@ class CIMFunctions : public Y2Namespace
 	/* TYPEINFO: map<string,any>(string) */
         YCPValue GetInstance (const YCPString& instanceName );
 
+
+	// general
+	/* TYPEINFO: boolean(string) */
+        YCPValue DeleteInstance (const YCPString& instanceName );
+
 	// general
 	/* TYPEINFO: string() */
 	YCPValue LastError ();
@@ -111,7 +116,9 @@ class CIMFunctions : public Y2Namespace
 	void registerFunctions ();
 	OpenWBEM::CIMClient* client ();
         YCPList arrayValueToList(const OpenWBEM::CIMValue& value);
-        YCPValue GetInstanceI (OpenWBEM::CIMObjectPath path );
+        YCPValue ValueToAny(const OpenWBEM::CIMValue &value);
+        YCPValue GetInstanceI ( const OpenWBEM::CIMObjectPath path );
+        YCPValue DeleteInstance (const OpenWBEM::CIMObjectPath path );
 
 	vector<string> _registered_functions;
 	OpenWBEM::CIMClient* m_client;
