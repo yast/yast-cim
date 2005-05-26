@@ -26,17 +26,12 @@
 
 #include <ycp/YCPVoid.h>
 
+#include <openwbem/OW_CIM.hpp>
+#include <openwbem/OW_CIMClient.hpp>
+
 /**
  * A simple class for CIMOM access
  */
- 
-namespace OpenWBEM {
-    class CIMClient;
-    class CIMException;
-    class CIMObjectPath;
-    class CIMValue;
-};
-
 
 class CIMFunctions : public Y2Namespace
 {
