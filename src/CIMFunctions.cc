@@ -62,6 +62,7 @@ class Y2CIMFunction: public Y2Function
     bool finishParameters ();
     YCPValue evaluateCall ();
     bool reset ();
+    string name () const;
 };
 
 
@@ -148,6 +149,11 @@ bool Y2CIMFunction::reset ()
     m_param5 = YCPNull ();
 
     return true;
+}
+
+string Y2CIMFunction::name() const
+{
+  return("Y2CIM");
 }
 
 /**

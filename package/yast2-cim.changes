@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Fri Jun 10 18:21:16 CEST 2005 - jsuchome@suse.cz
+
+- fixed missing declaration of virtual function (yxu@suse.de)
+- 2.12.1
+
+-------------------------------------------------------------------
 Thu May 26 09:20:29 CEST 2005 - visnov@suse.cz
 
 - gcc4 fixes
