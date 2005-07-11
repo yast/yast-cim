@@ -1,6 +1,6 @@
 @HEADER-COMMENT@
 
-# neededforbuild gpp libgpp  yast2-devtools  yast2-core yast2-core-devel doxygen openwbem openwbem-devel libxcrypt libxcrypt-devel expect dejagnu liby2util liby2util-devel doxygen pkgconfig
+# neededforbuild gpp libgpp  yast2-devtools  yast2-core yast2-core-devel doxygen openwbem openwbem-devel libxcrypt libxcrypt-devel expect dejagnu liby2util liby2util-devel doxygen pkgconfig pcre
 
 @HEADER@
 Summary:	-

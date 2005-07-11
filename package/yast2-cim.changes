@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Jul 11 08:37:00 CEST 2005 - jsuchome@suse.cz
+
+- fixed NFB
+- 2.12.2 
+
+-------------------------------------------------------------------
 Fri Jun 10 18:21:16 CEST 2005 - jsuchome@suse.cz
 
 - fixed missing declaration of virtual function (yxu@suse.de)
