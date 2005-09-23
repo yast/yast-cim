@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Sep 22 08:05:30 CEST 2005 - jsuchome@suse.cz
+
+- added openssl-devel to NFB to fix build
+- 2.13.0 
+
+-------------------------------------------------------------------
 Mon Aug  8 08:07:22 CEST 2005 - jsuchome@suse.cz
 
 - fixed NFB
