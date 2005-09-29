@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Thu Sep 29 17:41:49 CEST 2005 - jsuchome@suse.cz
+
+- removed redundant call of getInstance function (#116065)
+- 2.13.1
+
+-------------------------------------------------------------------
 Thu Sep 22 08:05:30 CEST 2005 - jsuchome@suse.cz
 
 - added openssl-devel to NFB to fix build

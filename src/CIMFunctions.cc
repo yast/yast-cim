@@ -204,7 +204,7 @@ bool CIMFunctions::cimomAvailable(OpenWBEM::CIMClient *client)
 {
     try
     {
-        OpenWBEM::StringArray namespaces = client->enumNameSpaceE();
+	OpenWBEM::StringArray namespaces = client->enumCIM_NamespaceE ();
         return true;
     }
     catch (OpenWBEM::Exception &e)
@@ -518,7 +518,7 @@ YCPValue CIMFunctions::DeleteInstance (OpenWBEM::CIMObjectPath path )
     }
 }
 
-// GetInstance
+// GetInstance (with path given as string)
 //
 YCPValue CIMFunctions::GetInstance (const YCPString& objectName )
 {
@@ -528,7 +528,7 @@ YCPValue CIMFunctions::GetInstance (const YCPString& objectName )
     return (GetInstance(cop));
 }
 
-// GetInstance
+// GetInstance (from CIM path)
 //
 YCPValue CIMFunctions::GetInstance (OpenWBEM::CIMObjectPath path)
 {
@@ -537,11 +537,25 @@ YCPValue CIMFunctions::GetInstance (OpenWBEM::CIMObjectPath path)
         return YCPVoid();
 
     try {
-    OpenWBEM::CIMInstance result = client()->getInstance ( path  ); 
+	OpenWBEM::CIMInstance result = client()->getInstance ( path  ); 
+        return GetInstance (result);
+    }
+    catch (OpenWBEM::CIMException &e)
+    {
+        y2error("%s", e.getMessage());
+        return YCPVoid();
+    }
+}
 
-    YCPMap instance;
+// GetInstance (return YCP value when we already have CIMInstance object)
+//
+YCPValue CIMFunctions::GetInstance (OpenWBEM::CIMInstance instance)
+{
 
-    OpenWBEM::CIMPropertyArray props = result.getProperties(OpenWBEM::CIMDataType::INVALID);
+    YCPMap retmap;
+
+    OpenWBEM::CIMPropertyArray props =
+	instance.getProperties(OpenWBEM::CIMDataType::INVALID);
 
     for (size_t i = 0; i < props.size(); ++i)
     {
@@ -571,19 +585,9 @@ YCPValue CIMFunctions::GetInstance (OpenWBEM::CIMObjectPath path)
 
         propertyMap->add(YCPString("value"), ValueToAny(cv) );
         //propertyMap->add(YCPString("type"), YCPString(cv.getType().toString()) );
-        instance->add(name, propertyMap);
+        retmap->add(name, propertyMap);
     }
-
-    return instance;
-    }
-
-    catch (OpenWBEM::CIMException &e)
-    {
-        y2error("%s", e.getMessage());
-        return YCPVoid();
-    }
-
-
+    return retmap;
 }
 
 // EnumInstances
@@ -611,16 +615,7 @@ YCPValue CIMFunctions::EnumerateInstances (const YCPString& classname)
         while (result.hasMoreElements())
         {
             OpenWBEM::CIMInstance i = result.nextElement();
-            cop = OpenWBEM::CIMObjectPath("root/cimv2", i);
-
-            if (! cop)
-            {
-                y2error ("Nonexistent cop\n");
-                continue;
-            }
-
-            y2debug("Getting Instance: %s", cop.toString().c_str());
-            result_list->add (GetInstance(cop));
+            result_list->add (GetInstance (i));
         }
 
         return result_list;

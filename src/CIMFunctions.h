@@ -133,7 +133,8 @@ class CIMFunctions : public Y2Namespace
 	OpenWBEM::CIMClient* client ();
         YCPList arrayValueToList(const OpenWBEM::CIMValue& value);
         YCPValue ValueToAny(const OpenWBEM::CIMValue &value);
-        YCPValue GetInstance ( const OpenWBEM::CIMObjectPath path );
+	YCPValue GetInstance (const OpenWBEM::CIMObjectPath path );
+	YCPValue GetInstance (const OpenWBEM::CIMInstance instance);
         YCPValue DeleteInstance (const OpenWBEM::CIMObjectPath path );
         YCPValue ReferenceNames (const OpenWBEM::CIMObjectPath path );
         YCPValue AssociatorNames (const OpenWBEM::CIMObjectPath path, 
