@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Mon Nov  6 12:02:30 CET 2006 - jsuchome@suse.cz
+
+- new version for new product
+- 2.14.0 
+
+-------------------------------------------------------------------
 Thu Sep 29 17:41:49 CEST 2005 - jsuchome@suse.cz
 
 - removed redundant call of getInstance function (#116065)
