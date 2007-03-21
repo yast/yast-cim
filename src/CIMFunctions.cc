@@ -858,7 +858,7 @@ YCPValue CIMFunctions::Associators( const OpenWBEM::CIMObjectPath objectName,
         YCPList result_list;
         OpenWBEM::CIMObjectPath cop;
 
-        y2debug("Number of instances: %d", result.numberOfElements());
+        y2debug("Number of instances: %zd", result.numberOfElements());
         while (result.hasMoreElements())
         {
             OpenWBEM::CIMInstance i = result.nextElement();
@@ -968,7 +968,7 @@ YCPValue CIMFunctions::References( const OpenWBEM::CIMObjectPath objectName,
         YCPList result_list;
         OpenWBEM::CIMObjectPath cop;
 
-        y2debug("Number of instances: %d", result.numberOfElements());
+        y2debug("Number of instances: %zd", result.numberOfElements());
         while (result.hasMoreElements())
         {
             OpenWBEM::CIMInstance i = result.nextElement();
