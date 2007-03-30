@@ -2,8 +2,8 @@
 
 
 @HEADER@
-BuildRequires:	dejagnu doxygen gcc-c++ libxcrypt-devel openssl-devel openwbem-devel yast2-core-devel yast2-devtools
-Summary:	-
+BuildRequires:	gcc-c++ libxcrypt-devel openssl-devel openwbem-devel yast2-core-devel yast2-devtools
+Summary:	CIM API for YaST modules
 
 %description
 -

@@ -1,4 +1,11 @@
 -------------------------------------------------------------------
+Fri Mar 30 11:12:21 CEST 2007 - jsuchome@suse.cz
+
+- configure.in.in adapted for current state (only require openwbem)
+- reduced BuildRequires
+- 2.15.0 
+
+-------------------------------------------------------------------
 Mon Nov  6 12:02:30 CET 2006 - jsuchome@suse.cz
 
 - new version for new product

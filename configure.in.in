@@ -1,53 +1,18 @@
-## core configure.in.in
-
 ## initialize
 @YAST2-INIT-COMMON@
+@YAST2-INIT-YCP@
 @YAST2-INIT-PROGRAM@
-
-## special stuff
-
-# libycp needs flex and bison
-AM_PROG_LEX
-AC_CHECK_PROGS(YACC, 'bison -y -d -v' byacc, false)
-if test "$YACC" = false; then
-	AC_MSG_ERROR([bison not installed])
-fi
-
-# liby2:Y2SerialComponent needs term.h -> ncurses, ncurses-devel
-yast_found_ncurses=no
-AC_CHECK_HEADER(term.h,[yast_found_ncurses=yes])
-if [[ "$yast_found_ncurses" = "no" ]]; then
- AC_MSG_ERROR(Headers for ncurses are missing. Please install the package ncurses-devel.)
-fi
-
-
-# libycp: y2crypt needs xcrypt.h -> libxcrypt, libxcrypt-devel
-yast_found_xcrypt=no
-AC_CHECK_HEADER(xcrypt.h,[yast_found_xcrypt=yes])
-if [[ "$yast_found_xcrypt" = "no" ]]; then
- AC_MSG_ERROR(Headers for xcrypt are missing. Please install the package libxcrypt-devel.)
-fi
-
-
-# for historic reasons this value is called SUSEVERSION
-SUSEVERSION=`echo $VERSION | cut -d . -f 1,2`
-AC_SUBST(SUSEVERSION)
-
-AGENT_INCLUDES='dnl
- -I$(top_srcdir)/libycp/src/include dnl
- -I$(top_srcdir)/liby2/src/include dnl
- -I$(top_srcdir)/libscr/src/include dnl
- -I$(includedir)'
-AC_SUBST(AGENT_INCLUDES)
-
-# override AGENT_LIBADD which is AC_SUBSTed in YAST2-CHECKS-PROGRAM
-AGENT_LIBADD='$(top_srcdir)/libscr/src/libscr.la'
 
 ## some common checks
 @YAST2-CHECKS-COMMON@
+@YAST2-CHECKS-YCP@
 @YAST2-CHECKS-PROGRAM@
-@YAST2-CHECKS-TESTSUITE@
 
+# check for openwbem-devel
+AC_CHECK_HEADER(openwbem/OW_config.h, [yast_found_openwbem=yes])
+if [[ "$yast_found_openwbem" != "yes" ]]; then
+    AC_MSG_ERROR(Headers for openwbem are missing. Please install the package openwbem-devel.)
+fi
 
 ## and generate the output
 @YAST2-OUTPUT@
